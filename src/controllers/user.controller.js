@@ -166,10 +166,6 @@ const loginUser = asyncHandler( async (req, res) => {
             "User Logged In successfully"
         )
     )
-
-
-
-
 })
 
 const logoutUser = asyncHandler( async (req, res) => {
