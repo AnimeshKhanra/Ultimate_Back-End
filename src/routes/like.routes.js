@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyJWT } from "../middlewares/auth.middlewares.js"
+import { verifyJwt } from "../middlewares/auth.middlewares.js"
 import {
     toggleVideoLike,
     toggleCommentLike, 
@@ -12,7 +12,7 @@ import {
 
 const router = Router();
 
-router.use(verifyJWT)  // Apply verifyJWT middleware to all routes in this file
+router.use(verifyJwt)  // Apply verifyJWT middleware to all routes in this file
 
 router.route("/toggle/v/:videoId").post(toggleVideoLike);
 router.route("/toggle/c/:commentId").post(toggleCommentLike);
