@@ -1,15 +1,14 @@
-import mongoose, {Schema} from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const playListSchema = new Schema({
     name: {
-            type: String,
-            required: true
-        },
+        type: String,
+        required: true
+    },
     description: {
         type: String,
         required: true
     },
-    
     video: [
         {
             type: Schema.Types.ObjectId,
@@ -23,4 +22,4 @@ const playListSchema = new Schema({
 }, { timestamps: true })
 
 
-export const playList = mongoose.model("playList", playListSchema);
+export const PlayList = mongoose.model("PlayList", playListSchema);
