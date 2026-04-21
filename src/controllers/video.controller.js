@@ -5,48 +5,45 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import mongoose from "mongoose";
 
-const getAllVideos = asyncHandler(async (req, res) => {
-    /*
-     * 1. take query from user
-     * 2. check valid query
-     * 3. query match with regex
-     * 4. take video from databse
-     * 5. aggregate paginate with videos
-     * 6. return response
-     */
 
+const getAllVideos = asyncHandler(async (req, res) => {
     const {
         page = 1,
         limit = 10,
-        query,
+        query = "",
         sortBy = "createdAt",
         sortType = "desc",
         userId,
     } = req.query;
 
-    const pageNumber = parseInt(page, 10); // convert from string to integer
-    const limitNumber = parseInt(limit, 10);
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
     const sortOrder = sortType === "asc" ? 1 : -1;
 
-    if (userId && !mongoose.Types.ObjectId.isValid(userId)) {
-        throw new ApiError(400, "Valid userId is required");
-    }
+    const match = {
+        isPublished: true,
+    };
 
-    const match = {};
-
-    if (query) {
+    if (query.trim()) {
         const regex = new RegExp(query, "i");
-        match.$or = [{ title: regex }, { description: regex }];
+
+        match.$or = [
+            { title: regex },
+            { description: regex }
+        ];
     }
 
     if (userId) {
+        if (!isValidObjectId(userId)) {
+            throw new ApiError(400, "Invalid userId");
+        }
+
         match.owner = new mongoose.Types.ObjectId(userId);
     }
 
-    const aggregate = await Video.aggregate([
-        {
-            $match: match,
-        },
+    const aggregate = Video.aggregate([
+        { $match: match },
+
         {
             $lookup: {
                 from: "users",
@@ -64,13 +61,17 @@ const getAllVideos = asyncHandler(async (req, res) => {
                 ],
             },
         },
+
         {
             $addFields: {
                 owner: { $first: "$owner" },
             },
         },
+
         {
-            $sort: { [sortBy]: sortOrder },
+            $sort: {
+                [sortBy]: sortOrder,
+            },
         },
     ]);
 
@@ -79,21 +80,10 @@ const getAllVideos = asyncHandler(async (req, res) => {
         limit: limitNumber,
     };
 
-    const result = await Video.aggregatePaginate(aggregate, options);
+    const videos = await Video.aggregatePaginate(aggregate, options);
 
     return res.status(200).json(
-        new ApiResponce(
-            200,
-            {
-                videos: result.docs,
-                totalVideos: result.totalDocs,
-                totalPages: result.totalPages,
-                currentPage: result.page,
-                hasNextPage: result.hasNextPage,
-                hasPrevPage: result.hasPrevPage,
-            },
-            "Video fetched successfully"
-        )
+        new ApiResponce(200, videos, "Videos fetched successfully")
     );
 });
 
@@ -271,8 +261,8 @@ const deleteVideo = asyncHandler(async (req, res) => {
     await Video.findByIdAndDelete(videoId);
 
     return res
-        .status(204)
-        .json(new ApiResponce(204, {}, "Video deleted successfully"));
+        .status(200)
+        .json(new ApiResponce(200, {}, "Video deleted successfully"));
 });
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
@@ -293,6 +283,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     }
 
     const video = await Video.findById(videoId);
+    // console.log("Your video is: ", video);
 
     if (!video) {
         throw new ApiError(404, "Video not found");
