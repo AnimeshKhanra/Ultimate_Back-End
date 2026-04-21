@@ -5,8 +5,6 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import mongoose from "mongoose";
 
-
-
 const getAllVideos = asyncHandler(async (req, res) => {
     /*
      * 1. take query from user
@@ -26,7 +24,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
         userId,
     } = req.query;
 
-    const pageNumber = parseInt(page, 10);  // convert from string to integer
+    const pageNumber = parseInt(page, 10); // convert from string to integer
     const limitNumber = parseInt(limit, 10);
     const sortOrder = sortType === "asc" ? 1 : -1;
 
@@ -99,46 +97,46 @@ const getAllVideos = asyncHandler(async (req, res) => {
     );
 });
 
-const publishAVideo = asyncHandler( async(req, res) => {
+const publishAVideo = asyncHandler(async (req, res) => {
     /*
-    * 1. take title, description from user
-    * 2. check validity of both
-    * 3. get video file and thumbnail from req.file
-    * 4. upload video to cloudinary and get durarion
-    * 5. upload thumbnail to cloudinary
-    * 6. create video document in DB
-    * 7. return response 
-    */
+     * 1. take title, description from user
+     * 2. check validity of both
+     * 3. get video file and thumbnail from req.file
+     * 4. upload video to cloudinary and get durarion
+     * 5. upload thumbnail to cloudinary
+     * 6. create video document in DB
+     * 7. return response
+     */
 
-    const { title , description } = req.body;
+    const { title, description } = req.body;
 
-    if(!title && title.trim() == ""){
+    if (!title && title.trim() === "") {
         throw new ApiError(400, "Title is required");
     }
 
-    if(!description && description.trim() == ""){
+    if (!description && description.trim() === "") {
         throw new ApiError(400, "Description is required");
     }
 
     const videoFileLocalPath = req.files?.videoFile?.[0]?.path;
     const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
 
-    if(!videoFileLocalPath){
+    if (!videoFileLocalPath) {
         throw new ApiError(400, "Video is required");
     }
 
-    if(!thumbnailLocalPath){
+    if (!thumbnailLocalPath) {
         throw new ApiError(400, "Thumbnail is required");
     }
 
     const videoFile = await uploadOnCloudinary(videoFileLocalPath);
     const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
 
-    if(!videoFile){
+    if (!videoFile) {
         throw new ApiError(400, "Failed to upload video file");
     }
 
-    if(!thumbnail){
+    if (!thumbnail) {
         throw new ApiError(400, "Failed to upload thumbnail");
     }
 
@@ -148,92 +146,91 @@ const publishAVideo = asyncHandler( async(req, res) => {
         title: title.trim(),
         description: description.trim(),
         duration: videoFile.duration || 0,
-        owner: req.user._id
-    })
+        owner: req.user._id,
+    });
 
     return res
-    .status(201)
-    .json(
-        new ApiResponce(201, video, "Video published successfully")
-    );
-
+        .status(201)
+        .json(new ApiResponce(201, video, "Video published successfully"));
 });
 
 const getVideoById = asyncHandler(async (req, res) => {
-/*
-*  1. get videoid using req.params
-*  2. check validity of videoId
-*  3. get video using videoId from DB
-*  4. Return response
-*/
-    const { videoId } = req.params
+    /*
+     *  1. get videoid using req.params
+     *  2. check validity of videoId
+     *  3. get video using videoId from DB
+     *  4. Return response
+     */
+    const { videoId } = req.params;
 
-    if(!mongoose.Types.ObjectId.isValid(videoId)){
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
         throw new ApiError(400, "Invalid video Id");
     }
 
-    const video = await Video.findById(videoId).populate("owner", "username fullName avatar");
+    const video = await Video.findById(videoId).populate(
+        "owner",
+        "username fullName avatar"
+    );
 
-    if(!video){
+    if (!video) {
         throw new ApiError(404, "Vido not found");
     }
 
     return res
-    .status(201)
-    .json(new ApiResponce(201, video, "Video fetched successfully"))
-
+        .status(200)
+        .json(new ApiResponce(200, video, "Video fetched successfully"));
 });
 
-const updateVideo = asyncHandler( async(req, res) => {
-    //TODO: update video details like title, description, thumbnail
-/*
- * 1. get videoId from req.params
- * 2. check validity of videoId
- * 3. take video details from db
- * 4. update video details
- * 5. save this
- * 6. return response
- */
+const updateVideo = asyncHandler(async (req, res) => {
+    /*
+     * 1. get videoId from req.params
+     * 2. check validity of videoId
+     * 3. take video details from db
+     * 4. update video details
+     * 5. save this
+     * 6. return response
+     */
 
     const { videoId } = req.params;
 
-    if(!mongoose.Types.ObjectId.isValid(videoId)){
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
         throw new ApiError(400, "Video Id is not valid");
     }
 
     const video = await Video.findById(videoId);
 
-    if(!video){
+    if (!video) {
         throw new ApiError(400, "Video not found");
     }
 
     //! ensure only the owner can update
-    if(video.owner.toString() !== req.user._id.toString()){
-        throw new ApiError(403, "You are not authorized to update this video")
+    if (video.owner.toString() !== req.user?._id.toString()) {
+        throw new ApiError(403, "You are not authorized to update this video");
     }
 
     const { title, description } = req.body;
 
     // Only run this block if the client actually sent title
-    if(title !== undefined){
-        if(!title.trim()) {
+    if (title !== undefined) {
+        if (!title.trim()) {
             throw new ApiError(400, "Title cannot be empty");
         }
         video.title = title.trim();
     }
 
     // Only run this block if the client actually sent description
-    if(description !== undefined){
-        if(!description.trim()) {
+    if (description !== undefined) {
+        if (!description.trim()) {
             throw new ApiError(400, "Description cannot be empty");
         }
         video.description = description.trim();
     }
 
-    const thumbnailLocalPath  = req.files?.thumbnail?.[0]?.path;
-    if(thumbnailLocalPath){
+    // const thumbnailLocalPath  = req.files?.thumbnail?.[0]?.path;
+    const thumbnailLocalPath = req.file?.path;
+    if (thumbnailLocalPath) {
         const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
-        if(!thumbnail){
+        if (!thumbnail) {
             throw new ApiError(400, "Failed to upload thumbnail");
         }
         video.thumbnail = thumbnail.url;
@@ -242,90 +239,89 @@ const updateVideo = asyncHandler( async(req, res) => {
     await video.save();
 
     return res
-    .status(200)
-    .json(
-        new ApiResponce(200, video, "Updated successfully")
-    )
-
+        .status(200)
+        .json(new ApiResponce(200, video, "Updated successfully"));
 });
 
 const deleteVideo = asyncHandler(async (req, res) => {
-/*
- *  1. take videoId from params
- *  2. check validate of videoId
- *  3. select video from db using videoId
- *  4. check authority
- *  5. delete video
- *  6. return response
- */
+    /*
+     *  1. take videoId from params
+     *  2. check validate of videoId
+     *  3. select video from db using videoId
+     *  4. check authority
+     *  5. delete video
+     *  6. return response
+     */
 
     const { videoId } = req.params;
 
-    if(!mongoose.Types.ObjectId.isValid(videoId)){
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
         throw new ApiError(400, "VideoId is not valid");
     }
 
     const video = await Video.findById(videoId);
+    if (!video) {
+        throw new ApiError(404, "Video not found");
+    }
 
-    if(video.owner.toString() !== req.user._id.toString()){
+    if (video.owner.toString() !== req.user._id.toString()) {
         throw new ApiError(403, "You are not authorized to delete this video");
     }
 
     await Video.findByIdAndDelete(videoId);
 
     return res
-    .status(201)
-    .json(
-        new ApiResponce(201, {}, "Video deleted successfully")
-    )
-})
+        .status(204)
+        .json(new ApiResponce(204, {}, "Video deleted successfully"));
+});
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
-/*
- * 1. get videoId from params
- * 2. check validity of videoId
- * 3. get video from database
- * 4. check authority (only owner can toggle)
- * 5. toggle isPublished status
- * 6. save the video
- * 7. return response
- */
+    /*
+     * 1. get videoId from params
+     * 2. check validity of videoId
+     * 3. get video from database
+     * 4. check authority (only owner can toggle)
+     * 5. toggle isPublished status
+     * 6. save the video
+     * 7. return response
+     */
 
     const { videoId } = req.params;
 
-    if(!mongoose.Types.ObjectId.isValid(videoId)){
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
         throw new ApiError(400, "VideoId is not Valid");
     }
 
     const video = await Video.findById(videoId);
 
-    if(!video){
-        throw new ApiError(400, "Video not found");
+    if (!video) {
+        throw new ApiError(404, "Video not found");
     }
 
-    if(video.owner.toString() !== req.user._id.toString()){
-        throw new ApiError(400, "You are not authorized to toggle published video");
+    if (video.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "You are not authorized to toggle published video");
     }
 
     // toggle published video
     video.isPublished = !video.isPublished;
+    await video.save();
 
     return res
-    .status(201)
-    .json(
-        new ApiResponce(201, video, `Video ${video.isPublished? "published" : "unpublished"} successfully`)
-    )
+        .status(200)
+        .json(
+            new ApiResponce(
+                200,
+                video,
+                `Video ${video.isPublished ? "published" : "unpublished"} successfully`
+            )
+        );
+});
 
-
-
-})
-
-
-export { 
+export {
     getAllVideos,
     publishAVideo,
     getVideoById,
     updateVideo,
     deleteVideo,
-    togglePublishStatus
+    togglePublishStatus,
 };
