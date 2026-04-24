@@ -11,15 +11,21 @@ import mongoose from "mongoose"
 const generateAccessAndRefreshToken = async (userId) => {
     try {
         const user = await User.findById(userId);
+
+
         const accessToken = user.generateAccessToken();
         const refreshToken  = user.generateRefreshToken();
+        
+        // console.log("the access token is: ", accessToken);
 
-        user.refreshToken = refreshToken;
-        await user.save({ validateBeforeSave: false });
+        user.refreshToken = refreshToken
+        await user.save({ validateBeforeSave: false })
 
-        return { accessToken, refreshToken };
-
+        // console.log("the refresh token is: ", refreshToken);
+        return {accessToken, refreshToken}
+        
     } catch (error) {
+        console.log("THE REAL TOKEN ERROR: ", error);
         throw new ApiError(500, "Something went wrong while generating Acccess and Refresh token");
     }
 }
