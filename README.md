@@ -50,30 +50,45 @@ ultimate_backend/
 │   ├── index.js               # Server entry point
 │   ├── constants.js           # Application constants
 │   ├── controllers/           # Route controllers
+│   │   ├── comment.controller.js
+│   │   ├── dashboard.controller.js
+│   │   ├── healthcheck.controller.js
+│   │   ├── like.controller.js
+│   │   ├── playlist.controller.js
+│   │   ├── subscription.controller.js
+│   │   ├── tweet.controller.js
 │   │   ├── user.controller.js
-│   │   └── comment.controller.js
+│   │   └── video.controller.js
 │   ├── db/
 │   │   └── index.js           # Database connection
 │   ├── middlewares/           # Custom middlewares
 │   │   ├── auth.middlewares.js
 │   │   └── multer.middlewares.js
 │   ├── models/                # Mongoose models
-│   │   ├── user.model.js
-│   │   ├── video.model.js
 │   │   ├── comment.model.js
 │   │   ├── like.model.js
 │   │   ├── playlist.model.js
 │   │   ├── subscription.model.js
-│   │   └── tweet.model.js
+│   │   ├── tweet.model.js
+│   │   ├── user.model.js
+│   │   └── video.model.js
 │   ├── routes/                # API routes
-│   │   ├── user.router.js
-│   │   └── comment.router.js
+│   │   ├── comment.routes.js
+│   │   ├── dashboard.routes.js
+│   │   ├── healthcheck.routes.js
+│   │   ├── like.routes.js
+│   │   ├── playlist.routes.js
+│   │   ├── subscription.routes.js
+│   │   ├── tweet.routes.js
+│   │   ├── user.routes.js
+│   │   └── video.routes.js
 │   └── utils/                 # Utility functions
 │       ├── ApiError.js
 │       ├── ApiResponse.js
 │       ├── asyncHandler.js
 │       └── cloudinary.js
 ├── public/                    # Static files
+│   └── temp/                  # Temporary files
 ├── package.json
 └── README.md
 ```
@@ -115,24 +130,101 @@ The server will start on `http://localhost:8000` (or the port specified in your 
 
 ## 📡 API Endpoints
 
-### User Routes (`/api/v1/users`)
+### User Routes
+Base path: `/api/v1/users`
 
-- `POST /register` - Register a new user
-- `POST /login` - User login
-- `POST /logout` - User logout (requires authentication)
-- `POST /refresh-token` - Refresh access token
-- `POST /change-password` - Change user password (requires authentication)
-- `GET /current-user` - Get current user details (requires authentication)
-- `PATCH /update-account-details` - Update account details (requires authentication)
-- `PATCH /update-avatar` - Update user avatar (requires authentication)
-- `PATCH /update-cover-image` - Update user cover image (requires authentication)
-- `GET /c/:username` - Get user channel profile (requires authentication)
-- `GET /watch-history` - Get user watch history (requires authentication)
+| HTTP Method | Path | Auth Required | Description |
+|------------|------|---------------|-------------|
+| POST | `/register` | ❌ | Register a new user with avatar and cover image |
+| POST | `/login` | ❌ | Login user |
+| POST | `/logout` | ✅ | Logout user |
+| POST | `/refresh-token` | ❌ | Refresh access token |
+| POST | `/change-password` | ✅ | Change current password |
+| GET | `/current-user` | ✅ | Get current logged-in user |
+| PATCH | `/update-account-details` | ✅ | Update account details |
+| PATCH | `/update-avatar` | ✅ | Update user avatar |
+| PATCH | `/update-cover-image` | ✅ | Update user cover image |
+| GET | `/c/:username` | ✅ | Get user channel profile |
+| GET | `/watch-history` | ✅ | Get user watch history |
 
-### Comment Routes (`/api/v1/comment`)
+### Video Routes
+Base path: `/api/v1/videos` | *All require authentication*
 
-- `GET /:videoId` - Get comments for a video (requires authentication)
-- `POST /:videoId` - Add a comment to a video (requires authentication)
+| HTTP Method | Path | Description |
+|------------|------|-------------|
+| GET | `/` | Get all videos |
+| POST | `/` | Publish a new video |
+| GET | `/:videoId` | Get video by ID |
+| DELETE | `/:videoId` | Delete video |
+| PATCH | `/:videoId` | Update video details |
+| PATCH | `/toggle/publish/:videoId` | Toggle video publish status |
+
+### Tweet Routes
+Base path: `/api/v1/tweets` | *All require authentication*
+
+| HTTP Method | Path | Description |
+|------------|------|-------------|
+| POST | `/` | Create a new tweet |
+| GET | `/user/:userId` | Get user's tweets |
+| PATCH | `/:tweetId` | Update tweet |
+| DELETE | `/:tweetId` | Delete tweet |
+
+### Comment Routes
+Base path: `/api/v1/comments` | *All require authentication*
+
+| HTTP Method | Path | Description |
+|------------|------|-------------|
+| GET | `/:videoId` | Get video comments |
+| POST | `/:videoId` | Add comment to video |
+| PATCH | `/c/:commentId` | Update comment |
+| DELETE | `/c/:commentId` | Delete comment |
+
+### Like Routes
+Base path: `/api/v1/likes` | *All require authentication*
+
+| HTTP Method | Path | Description |
+|------------|------|-------------|
+| POST | `/toggle/v/:videoId` | Toggle like on video |
+| POST | `/toggle/c/:commentId` | Toggle like on comment |
+| POST | `/toggle/t/:tweetId` | Toggle like on tweet |
+| GET | `/videos` | Get all liked videos |
+
+### Playlist Routes
+Base path: `/api/v1/playlists` | *All require authentication*
+
+| HTTP Method | Path | Description |
+|------------|------|-------------|
+| POST | `/` | Create a new playlist |
+| GET | `/:playlistId` | Get playlist by ID |
+| PATCH | `/:playlistId` | Update playlist |
+| DELETE | `/:playlistId` | Delete playlist |
+| PATCH | `/:playlistId/add/:videoId` | Add video to playlist |
+| PATCH | `/:playlistId/remove/:videoId` | Remove video from playlist |
+| GET | `/user/:userId` | Get user's playlists |
+
+### Subscription Routes
+Base path: `/api/v1/subscriptions` | *All require authentication*
+
+| HTTP Method | Path | Description |
+|------------|------|-------------|
+| POST | `/c/:channelId` | Toggle subscription to channel |
+| GET | `/c/:channelId` | Get channel subscribers |
+| GET | `/u/:subscriberId` | Get subscribed channels for user |
+
+### Dashboard Routes
+Base path: `/api/v1/dashboards` | *All require authentication*
+
+| HTTP Method | Path | Description |
+|------------|------|-------------|
+| GET | `/stats` | Get channel statistics |
+| GET | `/videos` | Get channel videos |
+
+### Healthcheck Routes
+Base path: `/api/v1/healthcheck` | *All require authentication*
+
+| HTTP Method | Path | Description |
+|------------|------|-------------|
+| GET | `/` | Health check endpoint |
 
 ## 🧪 Testing
 
@@ -146,7 +238,7 @@ npm test
 
 **Animesh Khanra**
 
-- GitHub: [animseh](https://github.com/animseh)
+- GitHub: [Animseh](https://github.com/AnimeshKhanra)
 - LinkedIn: [LinkedIn Profile](https://www.linkedin.com/in/animesh-khanra-3041231b4/)
 
 ## 🙏 Acknowledgments
